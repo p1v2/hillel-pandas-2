@@ -35,6 +35,7 @@ class Student:
     city: str
 
 
+
 def generate_students() -> List[Student]:
     students = []
 
@@ -66,14 +67,67 @@ def generate_students() -> List[Student]:
     return students
 
 
+@dataclass
+class RestaurantReview:
+    id: int
+    name: str
+    reviewer_name: str
+    review_text: str
+    rating: int
+    last_visit_date: str
+    city: str
+    
+    
+def generate_restaurant() -> List[RestaurantReview]:
+    restaurants = []
+    
+    for i in range(500):
+        
+        gender = fake.random_int(min=0, max=1)
+        name = fake.company().replace(",", "")
+        reviewer_name = fake.first_name_male() if gender == 1 else fake.first_name_female()
+        review_text = fake.paragraph().replace(",", "")
+        rating = fake.random_int(1, 5)
+        last_visit_date = fake.date_time_between(start_date="-2y", end_date="now").strftime('%Y-%m-%d')
+        city = fake.city_name()
+        
+        restaurant = RestaurantReview(
+            id=i,
+            name=name,
+            reviewer_name=reviewer_name,
+            review_text=review_text,
+            rating=rating,
+            last_visit_date=last_visit_date,
+            city=city
+        )
+        restaurants.append(restaurant)
+        
+        for restaurant in fake.random_elements(elements=restaurants, length=int(len(restaurants) * 0.01)):
+            restaurant.rating = fake.random_int(min=6, max=20)
+            restaurant.last_visit_date = None
+
+    
+        
+    return restaurants
+    
+
 def save_students_to_csv(students: List[Student]):
-    with open('students.csv', 'w') as f:
+    with open('students.csv', 'w', encoding='utf-8') as f:
         f.write('id,first_name,last_name,birth_date,average_mark,count_of_lessons_absent,count_of_lessons_sick,gender,city\n')
 
         for student in students:
             f.write(f'{student.id},{student.first_name},{student.last_name},{student.birth_date},{student.average_mark},{student.count_of_lessons_absent},{student.count_of_lessons_sick},{student.gender},{student.city}\n')
+            
 
+def saves_restaurants_to_csv(restaurants: List[RestaurantReview]):
+    with open('restaurant_review.csv', 'w', encoding='utf-8') as f:
+        f.write('id,name,reviewer_name,review_text,rating,last_visit_date,city\n')
+
+        for restaurant in restaurants:
+             f.write(f"{restaurant.id},{restaurant.name},{restaurant.reviewer_name},{restaurant.review_text},{restaurant.rating},{restaurant.last_visit_date},{restaurant.city}\n")
 
 if __name__ == '__main__':
-    students = generate_students()
-    save_students_to_csv(students)
+    # students = generate_students()
+    # save_students_to_csv(students)
+    restorans_review = generate_restaurant()
+    saves_restaurants_to_csv(restorans_review)
