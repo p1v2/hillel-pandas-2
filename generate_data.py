@@ -1,26 +1,14 @@
+from __future__ import annotations
+
+import pandas as pd
+import random
 from dataclasses import dataclass
+from datetime import datetime, timedelta
+from faker import Faker
 from typing import List
 
-import faker
+fake = Faker('uk_UA')
 
-# Generate dataset of students, each student should have the following attributes:
-# - id
-# - first_name
-# - last_name
-# - birth_date
-# - average mark
-# - count of lessons absent
-# - count of lessons sick
-# - gender
-# - city
-
-# first_name, last_name, city should be from Ukraine
-# birth_date should be from 1990-01-01 to 2005-01-01
-
-# Generate 1000 students and save them to a csv file
-
-# Set ukrainian locale
-fake = faker.Faker('uk_UA')
 
 @dataclass
 class Student:
@@ -34,46 +22,63 @@ class Student:
     gender: str
     city: str
 
-
-def generate_students() -> List[Student]:
-    students = []
-
-    for i in range(1000):
-        count_of_lessons_absent = fake.random_int(min=0, max=10)
-        count_of_lessons_sick = fake.random_int(min=0, max=count_of_lessons_absent)
-
-        gender = fake.random_int(min=0, max=1)
-        first_name = fake.first_name_male() if gender == 1 else fake.first_name_female()
-        city = fake.city_name()
-
-        student = Student(
-            id=i,
+    @classmethod
+    def generate(cls, _id: int) -> Student:
+        gender = random.choice(["Male", "Female"])
+        first_name = fake.first_name_male() if gender == "Male" else fake.first_name_female()
+        return cls(
+            id=_id,
             first_name=first_name,
             last_name=fake.last_name(),
             birth_date=fake.date_of_birth(minimum_age=15, maximum_age=30).strftime('%Y-%m-%d'),
-            average_mark=fake.random_int(min=1, max=100),
-            count_of_lessons_absent=count_of_lessons_absent,
-            count_of_lessons_sick=count_of_lessons_sick,
-            gender="Male" if gender == 1 else "Female",
-            city=city
+            average_mark=random.randint(1, 100),
+            count_of_lessons_absent=random.randint(0, 10),
+            count_of_lessons_sick=random.randint(0, 10),
+            gender=gender,
+            city=fake.city_name()
         )
-        students.append(student)
 
-    # For the 1% of random students, set the average mark to None
-    for student in fake.random_elements(elements=students, length=int(len(students) * 0.01)):
-        student.average_mark = None
-
-    return students
+    @property
+    def full_name(self) -> str:
+        return f"{self.first_name} {self.last_name}"
 
 
-def save_students_to_csv(students: List[Student]):
-    with open('students.csv', 'w') as f:
-        f.write('id,first_name,last_name,birth_date,average_mark,count_of_lessons_absent,count_of_lessons_sick,gender,city\n')
+@dataclass
+class RestaurantReview:
+    id: int
+    name: str
+    reviewer_name: str
+    review_text: str
+    rating: int
+    last_visit_date: str
+    city: str
 
-        for student in students:
-            f.write(f'{student.id},{student.first_name},{student.last_name},{student.birth_date},{student.average_mark},{student.count_of_lessons_absent},{student.count_of_lessons_sick},{student.gender},{student.city}\n')
+    @classmethod
+    def generate(cls, _id: int) -> RestaurantReview:
+        return cls(
+            id=_id,
+            name=fake.company().replace(",", ""),
+            reviewer_name=fake.first_name_male() if random.choice(
+                ["Male", "Female"]) == "Male" else fake.first_name_female(),
+            review_text=fake.paragraph().replace(",", ""),
+            rating=random.randint(1, 5),
+            last_visit_date=(datetime.now() - timedelta(days=random.randint(0, 730))).strftime('%Y-%m-%d'),
+            city=fake.city_name()
+        )
+
+
+def generate_data(cls: type, num_records: int) -> List:
+    return [cls.generate(i) for i in range(num_records)]
+
+
+def save_to_csv(data: List, filename: str):
+    df = pd.DataFrame([vars(record) for record in data])
+    df.to_csv(filename, index=False)
 
 
 if __name__ == '__main__':
-    students = generate_students()
-    save_students_to_csv(students)
+    students = generate_data(Student, 1000)
+    save_to_csv(students, "students.csv")
+
+    restaurant_reviews = generate_data(RestaurantReview, 500)
+    save_to_csv(restaurant_reviews, "restaurant_reviews.csv")
